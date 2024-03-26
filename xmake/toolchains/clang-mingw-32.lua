@@ -18,7 +18,7 @@ toolchain("clang-mingw-32") do
         if not (toolchain:is_plat("mingw") and toolchain:is_arch("i386", "x86", "i686")) then
             raise("clang-mingw-32: Only MinGW x86 is supported!")
         end
-        return import("detect.sdks.find_mingw")() and import("lib.detect.find_tool")("clang")
+        return import("lib.detect.find_program")("i686-w64-mingw32-gcc") and import("lib.detect.find_tool")("clang")
     end)
 
     --- custom configs
