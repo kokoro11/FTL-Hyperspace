@@ -95,8 +95,8 @@ target("Hyperspace")
     end
     --- Custom Commands
     before_build(function (target)
-        if not os.is_host("linux", "mingw") then
-            raise("You can only build the project on Linux!")
+        if not os.is_subhost("linux", "msys", "macosx") then
+            raise("You can only build the project on Linux, MSYS2 or macOS!")
         end
         cprint("${default}Hyperspace build toolchain: ${green}%s", build_toolchain)
         local oldir = os.cd(os.projectdir())
