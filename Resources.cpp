@@ -19,7 +19,9 @@
 #include "MainMenu.h"
 #include "CustomBoss.h"
 #include "CustomStore.h"
+#ifndef SKIPDISCORD
 #include "DiscordIntegration.h"
+#endif
 #include "CustomDrones.h"
 #include "Seeds.h"
 #include "SaveFile.h"
