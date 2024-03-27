@@ -7,6 +7,13 @@ includes("xmake/toolchains/*.lua")
 add_rules("mode.debug", "mode.releasedbg", "mode.release", "mode.minsizerel")
 set_defaultmode("debug")
 
+option("bool_linux_steam_build")
+    set_description("Enable STEAM_1_6_13_BUILD for linux version")
+    set_showmenu(true)
+    set_default(true)
+    add_defines("STEAM_1_6_13_BUILD")
+option_end()
+
 option("bool_system_boost")
     set_description("Use system boost library (you must enable this if building on windows)")
     set_showmenu(true)
@@ -25,13 +32,6 @@ option("linux_build_toolchain")
     set_showmenu(true)
     set_default("clang-gcc48-64")
     set_values("clang-gcc48-64")
-option_end()
-
-option("linux_steam_1_6_13_build")
-    set_description("Enable STEAM_1_6_13_BUILD for linux version")
-    set_showmenu(true)
-    set_default(true)
-    add_defines("STEAM_1_6_13_BUILD")
 option_end()
 
 option("windows_build_toolchain")
@@ -86,7 +86,7 @@ target("Hyperspace")
     add_defines("_REENTRANT")
     add_defines("SKIPDISCORD")
     if is_plat("linux") then
-        add_options("linux_steam_1_6_13_build")
+        add_options("bool_linux_steam_build")
     elseif is_plat("mingw") then
         add_defines("BUILD_DLL")
     end
@@ -106,8 +106,8 @@ target("Hyperspace")
     end
     --- Custom Commands
     before_build(function (target)
-        if not os.is_subhost("linux", "msys", "macosx") then
-            raise("You can only build the project on Linux, MSYS2 or macOS!")
+        if not os.is_subhost("linux", "windows", "msys", "macosx") then
+            raise("You can only build the project on Linux, Windows/MSYS2 or macOS!")
         end
         cprint("${default}Hyperspace build toolchain: ${green}%s", build_toolchain)
         local oldir = os.cd(os.projectdir())
