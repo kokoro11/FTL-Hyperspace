@@ -99,6 +99,9 @@ package("boost")
     end)
 
     on_install("linux", "mingw", function (package)
+        if is_host("windows") then
+            raise("Installing boost package on windows is not supported, please use system boost library.")
+        end
         import("core.base.option")
 
         local build_toolchain = package:toolchains()[1]
@@ -190,18 +193,18 @@ package("boost")
 
         vprint("running ./b2 with argv =", argv)
         local tmpfile = os.tmpfile()
-        os.ln(tmpfile, path.join(package:installdir(), "xmake-boost-install.log"))
         if os.execv("./b2", argv, {try = true, stdout = tmpfile}) ~= 0 then
-            raise("boost build failed, please check log in", tmpfile)
+            raise("boost build failed, please check log in %s", tmpfile)
         end
-        vprint("boost install success, please check log in", tmpfile)
+        os.ln(tmpfile, path.join(package:installdir(), "xmake-boost-install.log"))
+        vprint("boost install success, please check log in %s", tmpfile)
     end)
     on_test(function (package)
         local installdir = package:installdir()
         local logfile = path.join(installdir, "xmake-boost-install.log")
         if not os.isdir(path.join(installdir, "include", "boost")) then
-            raise("boost test failed, please check log in", logfile)
+            raise("boost test failed, please check log in %s", logfile)
         end
-        vprint("boost test success, please check log in", logfile)
+        vprint("boost test success, please check log in %s", logfile)
     end)
 package_end()

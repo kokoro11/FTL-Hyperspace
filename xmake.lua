@@ -7,6 +7,12 @@ includes("xmake/toolchains/*.lua")
 add_rules("mode.debug", "mode.releasedbg", "mode.release", "mode.minsizerel")
 set_defaultmode("debug")
 
+option("bool_system_boost")
+    set_description("Use system boost library (you must enable this if building on windows)")
+    set_showmenu(true)
+    set_default(false)
+option_end()
+
 option("compiler_warning_verbosity")
     set_description("Set compiler warning verbosity")
     set_showmenu(true)
@@ -55,7 +61,9 @@ package_end()
 
 add_repositories("local xmake")
 add_requires("lua-custom", {alias = "lua"})
-add_requires("boost", {configs = {headers = true}})
+if not has_config("bool_system_boost") then
+    add_requires("boost", {configs = {headers = true}})
+end
 if is_plat("linux") then
     add_requires("sdl2", {system = true, configs = {shared = true}})
 end
@@ -86,7 +94,10 @@ target("Hyperspace")
     add_includedirs("rapidxml", "lua", ".")
     add_files("*.cpp|FTLGame*32.cpp|FTLGame*64.cpp|main.cpp", "lua/*.cpp", "lua/*.c", "lua/modules/*.i", "main.cpp")
     --- Dependencies
-    add_packages("boost", "lua")
+    if not has_config("bool_system_boost") then
+        add_packages("boost")
+    end
+    add_packages("lua")
     if is_plat("linux") then
         add_packages("sdl2")
     elseif is_plat("mingw") then
