@@ -101,8 +101,8 @@ target("Hyperspace")
     if is_plat("linux") then
         add_packages("sdl2")
     elseif is_plat("mingw") then
-        add_shflags("-static")
-        add_syslinks("opengl32", "advapi32", "gdi32", "kernel32", "user32", "shell32")
+        add_shflags("-static", "-static-libgcc", "-static-libstdc++")
+        add_syslinks("gcc_eh", "opengl32", "advapi32", "gdi32", "kernel32", "user32", "shell32")
     end
     --- Custom Commands
     before_build(function (target)
