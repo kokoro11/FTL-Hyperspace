@@ -48,7 +48,7 @@ toolchain("clang-mingw-32") do
     set_toolset("objcopy", chost.."-objcopy", "objcopy.exe")
     set_toolset("mrc", chost.."-windres", "windres.exe")
     add_defines("__GXX_TYPEINFO_EQUALITY_INLINE=0")
-    add_cxflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread")
+    add_cxflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread", "-stdlib=libstdc++")
     add_asflags(flag_target, flag_sysroot)
     add_ldflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread", "-fuse-ld=lld")
     add_shflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread", "-fuse-ld=lld")
