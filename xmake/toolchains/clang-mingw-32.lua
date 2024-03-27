@@ -12,10 +12,8 @@ toolchain("clang-mingw-32") do
     set_toolset("cc", "clang")
     set_toolset("cxx", "clang", "clang++")
     set_toolset("as", "clang")
-    --set_toolset("ld", "clang++", "clang")
-    set_toolset("ld", "i686-w64-mingw32-ld", "ld.exe")
-    --set_toolset("sh", "clang++", "clang")
-    set_toolset("sh", "i686-w64-mingw32-ld", "ld.exe")
+    set_toolset("ld", "clang++", "clang")
+    set_toolset("sh", "clang++", "clang")
     on_load(function (toolchain)
         local march = "-m32"
         toolchain:add("cxflags", march)
@@ -52,10 +50,8 @@ toolchain("clang-mingw-32") do
     add_defines("__GXX_TYPEINFO_EQUALITY_INLINE=0")
     add_cxflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread")
     add_asflags(flag_target, flag_sysroot)
-    --add_ldflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread")
-    add_ldflags(flag_sysroot, "-pthread")
-    --add_shflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread")
-    add_shflags(flag_sysroot, "-pthread")
+    add_ldflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread", "-fuse-ld=lld")
+    add_shflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread", "-fuse-ld=lld")
     --[[
     local clang_version = "17"
     local mingw_dir = "/usr/"..chost
