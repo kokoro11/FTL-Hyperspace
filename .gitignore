@@ -57,3 +57,8 @@ build-*/
 
 # xmake config cache
 .xmake/
+
+## clangd
+
+# clangd cache
+.cache/
