@@ -52,3 +52,8 @@ build/
 
 # buildscripts/buildall.sh, .github/workflows/release.yml
 build-*/
+
+## xmake
+
+# xmake config cache
+.xmake/

@@ -21,7 +21,10 @@ toolchain("clang-gcc48-64") do
             raise("clang-gcc48-64: Only Linux x86_64 is supported!")
         end
         local gcc_path = get_config("toolchain/clang-gcc48-64/gcc48") or "gcc-4.8"
-        return import("lib.detect.find_program")(gcc_path) and import("lib.detect.find_tool")("clang")
+        if not import("lib.detect.find_program")(gcc_path) then
+            raise("clang-gcc48-64: Invalid GCC 4.8 executable path!")
+        end
+        return import("lib.detect.find_tool")("clang")
     end)
 
     --- custom configs
