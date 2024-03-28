@@ -33,14 +33,14 @@ toolchain("clang-gcc48-64") do
     on_load(function (toolchain)
         local march = "-m64"
         local gcc_path = get_config("toolchain/clang-gcc48-64/gcc48") or "gcc-4.8"
-        vprint("clang-gcc48-64:     GCC 4.8 executable path: [%s]", gcc_path)
+        vprint("clang-gcc48-64: GCC  4.8  executable  path: [%s]", gcc_path)
         local chost = os.iorunv(gcc_path, {"-dumpmachine"}):trim()
-        vprint("clang-gcc48-64: Generated    GCC 4.8 target: [%s]", chost)
+        vprint("clang-gcc48-64: Detected    GCC 4.8 target: [%s]", chost)
         local _, clang_output = os.iorunv("clang", {"-E", "-Wp,-v", "-"}, {stdin = "/dev/null"})
         local clang_include_dir = clang_output:match("%s(/[^%c]+include)%c")
-        vprint("clang-gcc48-64: Generated clang_include_dir: [%s]", clang_include_dir)
+        vprint("clang-gcc48-64: Detected clang_include_dir: [%s]", clang_include_dir)
         local gcc_install_dir = path.directory(os.iorunv(gcc_path, {"-print-prog-name=cc1"}))
-        vprint("clang-gcc48-64: Generated   gcc_install_dir: [%s]", gcc_install_dir)
+        vprint("clang-gcc48-64: Detected   gcc_install_dir: [%s]", gcc_install_dir)
         local flag_gcc_install_dir = "--gcc-install-dir="..gcc_install_dir
         toolchain:add("cxflags", march, flag_gcc_install_dir, "-nostdinc", "-fPIC")
         toolchain:add("sysincludedirs",

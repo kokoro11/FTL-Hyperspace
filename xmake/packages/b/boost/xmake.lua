@@ -173,10 +173,11 @@ package("boost")
         else
             table.insert(argv, "address-model=32")
         end
-
-        table.insert(b2_cxxflags, "-std=c++11")
-        if package:config("pic") ~= false then
-            table.insert(b2_cxxflags, "-fPIC")
+        if package:is_plat("linux") then
+            table.insert(b2_cxxflags, "-std=c++11")
+            if package:config("pic") ~= false then
+                table.insert(b2_cxxflags, "-fPIC")
+            end
         end
         table.insert(argv, "cflags=" .. os.args(b2_cflags))
         table.insert(argv, "cxxflags=" .. os.args(b2_cxxflags))

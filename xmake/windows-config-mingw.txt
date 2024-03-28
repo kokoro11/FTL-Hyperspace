@@ -1,0 +1,12 @@
+{
+    plat = "mingw",
+    arch = "x86",
+    mode = "release",
+    bool_linux_steam_build = true,
+    bool_system_boost = true,
+    compiler_warning_verbosity = "none",
+    linux_build_toolchain = "clang-gcc48-64",
+    windows_build_toolchain = "clang-mingw-32",
+    ["toolchain/clang-gcc48-64/gcc48"] = "gcc-4.8",
+    ["toolchain/clang-mingw-32/sysroot"] = ""
+}

@@ -42,29 +42,14 @@ toolchain("clang-mingw-32") do
     local flag_sysroot = "--sysroot="..clang_sysroot
     local chost = "i686-w64-mingw32"
     set_runtimes("stdc++_static")
-    set_toolset("ar", chost.."-ar", "ar.exe")
-    set_toolset("strip", chost.."-strip", "strip.exe")
-    set_toolset("ranlib", chost.."-ranlib", "ranlib.exe")
-    set_toolset("objcopy", chost.."-objcopy", "objcopy.exe")
-    set_toolset("mrc", chost.."-windres", "windres.exe")
+    set_toolset("ar", chost.."-ar", "ar.exe", "llvm-ar")
+    set_toolset("strip", chost.."-strip", "strip.exe", "llvm-strip")
+    set_toolset("ranlib", chost.."-ranlib", "ranlib.exe", "llvm-ranlib")
+    set_toolset("objcopy", chost.."-objcopy", "objcopy.exe", "llvm-objcopy")
+    set_toolset("mrc", chost.."-windres", "windres.exe", "llvm-windres")
     add_defines("__GXX_TYPEINFO_EQUALITY_INLINE=0")
     add_cxflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread")
     add_asflags(flag_target, flag_sysroot)
     add_ldflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread", "-fuse-ld=lld")
     add_shflags(flag_target, flag_sysroot, "-fdwarf-exceptions", "-pthread", "-fuse-ld=lld")
-    --[[
-    local clang_version = "17"
-    local mingw_dir = "/usr/"..chost
-    local gcc_version = "13.1.0"
-    local gcc_install_dir = "/usr/lib/gcc/"..chost.."/"..gcc_version
-    local flag_gcc_install_dir = "--gcc-install-dir="..gcc_install_dir
-    add_cxflags("-nostdinc")
-    add_sysincludedirs(
-        "/usr/lib/clang/"..clang_version.."/include",
-        mingw_dir.."/include/c++/"..gcc_version,
-        mingw_dir.."/include/c++/"..gcc_version.."/"..chost,
-        mingw_dir.."/include/c++/"..gcc_version.."/backward",
-        mingw_dir.."/include",
-        gcc_install_dir.."/include"
-    )]]
 end toolchain_end()

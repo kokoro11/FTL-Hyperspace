@@ -15,7 +15,7 @@ option("bool_linux_steam_build")
 option_end()
 
 option("bool_system_boost")
-    set_description("Use system boost library (you must enable this if building on windows)")
+    set_description("Use system boost library (this option must be enabled if you are building on windows)")
     set_showmenu(true)
     set_default(false)
 option_end()
@@ -38,7 +38,7 @@ option("windows_build_toolchain")
     set_description("Set build toolchain for Windows version")
     set_showmenu(true)
     set_default("clang-mingw-32")
-    set_values("clang-mingw-32")
+    set_values("clang-mingw-32", "mingw-32-hs")
 option_end()
 
 local build_toolchain
@@ -80,9 +80,13 @@ target("Hyperspace")
     set_warnings(get_config("compiler_warning_verbosity"))
     set_kind("shared")
     add_rules("swig.cpp", {moduletype = "lua"})
-    add_cxflags("-msse", "-msse2", "-mfpmath=sse", "-Werror=narrowing")
+    add_vectorexts("sse", "sse2")
+    add_cxflags("-mfpmath=sse", "-Werror=narrowing", "-Wno-unknown-pragmas", "-Wno-attributes")
+    if build_toolchain == "mingw-32-hs" then
+        set_optimize("fast")
+    end
     --- Defines
-    add_defines(is_mode("debug", "releasedbg") and "DEBUG" or "NDEBUG")
+    add_defines(is_mode("debug") and "DEBUG" or "NDEBUG")
     add_defines("_REENTRANT")
     add_defines("SKIPDISCORD")
     if is_plat("linux") then
@@ -92,7 +96,7 @@ target("Hyperspace")
     end
     --- Sources
     add_includedirs("rapidxml", "lua", ".")
-    add_files("*.cpp|FTLGame*32.cpp|FTLGame*64.cpp|main.cpp", "lua/*.cpp", "lua/*.c", "lua/modules/*.i", "main.cpp")
+    add_files("FTLGame.cpp", "*.cpp|FTLGame*.cpp|main.cpp", "lua/*.cpp", "lua/*.c", "lua/modules/*.i", "main.cpp")
     --- Dependencies
     if not has_config("bool_system_boost") then
         add_packages("boost")
@@ -108,6 +112,9 @@ target("Hyperspace")
     before_build(function (target)
         if not os.is_subhost("linux", "windows", "msys", "macosx") then
             raise("You can only build the project on Linux, Windows/MSYS2 or macOS!")
+        end
+        if build_toolchain == "mingw-32-hs" then
+            wprint("GCC compiler optimizations are restricted to avoid bugs!")
         end
         cprint("${default}Hyperspace build toolchain: ${green}%s", build_toolchain)
         local oldir = os.cd(os.projectdir())

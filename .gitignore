@@ -62,3 +62,8 @@ build-*/
 
 # clangd cache
 .cache/
+
+## vscode
+
+# vscode workspace settings
+.vscode/settings.json
