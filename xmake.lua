@@ -8,9 +8,18 @@ includes("xmake/toolchains/*.lua")
 --- And replace `xmake config --conig=xxx` with `xmake cu --conig=xxx`.
 --- There are also example configs inside `xmake/` folder. You can import configs by running `xmake config --import=xxx.txt`.
 
-add_rules("plugin.compile_commands.autoupdate", {outputdir = "."})
 add_rules("mode.debug", "mode.releasedbg", "mode.release", "mode.minsizerel")
 set_defaultmode("debug")
+
+option("bool_compile_commands")
+    set_description("Automatically generate compile_commands.json after a successful build")
+    set_showmenu(true)
+    set_default(false)
+option_end()
+
+if has_config("bool_compile_commands") then
+    add_rules("plugin.compile_commands.autoupdate", {outputdir = "."})
+end
 
 option("bool_linux_steam_build")
     set_description("Enable STEAM_1_6_13_BUILD for linux version")
@@ -127,13 +136,30 @@ target("Hyperspace")
             cprint("${default}Found SWIG runtime file: ${green}lua/swigluarun.h")
         else
             cprintf('${default}Generating SWIG runtime... ')
-            os.execv("swig", {"-c++", "-lua", "-external-runtime", "lua/swigluarun.h.temp1"})
-            os.execv("bash", {"processSwigRuntime.sh"})
+            if os.execv("swig", {"-c++", "-lua", "-external-runtime", "lua/swigluarun.h"}) ~= 0 then
+                cprint('${red}fail')
+                raise("Failed at generating SWIG runtime.")
+            end
+            local data = io.readfile("lua/swigluarun.h")
+            io.writefile("lua/swigluarun.h", "#ifndef SWIGLUA\n#define SWIGLUA\n"..data.."\n#endif\n")
             cprint('${green}success')
         end
         cprintf('${default}Generating Hyperspace version... ')
-        os.execv("bash", {"generateVersion.sh"})
-        cprint('${green}success')
+        local version = os.iorunv("git", {"describe", "--always", "--dirty", "--match", "NOT A TAG"}):trim()
+        local branch = os.iorunv("git", {"rev-parse", "--abbrev-ref", "HEAD"}):trim()
+        local new_data = format([[#pragma once
+#undef BUILD_IDENTIFIER_HASH
+#define BUILD_IDENTIFIER_HASH "%s"
+#undef BUILD_BRANCH
+#define BUILD_BRANCH "%s"
+]], version, branch)
+        if not os.isfile("Version.autogen.hpp") or new_data ~= io.readfile("Version.autogen.hpp") then
+            io.writefile("Version.autogen.hpp", new_data)
+            cprint('${green}success')
+        else
+            cprint('${green}unchanged')
+        end
+        cprint('${default}Hyperspace version: ${green}%s (%s)', version, branch)
         os.cd(oldir)
     end)
     after_clean(function (target)
