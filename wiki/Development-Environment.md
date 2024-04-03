@@ -18,7 +18,7 @@ pacman -Syu
 # Install MinGW GCC toolchain:
 pacman -S mingw-w64-i686-toolchain
 # Install LLVM/clang toolchain:
-pacman -S mingw-w64-clang-i686-toolchain
+pacman -S mingw-w64-i686-clang
 # Install extra clang tools:
 pacman -S mingw-w64-i686-clang-tools-extra
 # Install lua library:
