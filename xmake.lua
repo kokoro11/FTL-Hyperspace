@@ -4,7 +4,7 @@ includes("xmake/toolchains/*.lua")
 --- Config Section
 --- ==============
 --- Running `xmake config --conig=xxx` will overwrite all project configs to the default except for the configs you specified.
---- To append configs, install this plugin: `xmake plugin --install https://github.com/kokoro11/xmake-plugins`.
+--- To append configs, install this plugin: `xmake plugin --install https://github.com/SirLynix/xmake-plugins`.
 --- And replace `xmake config --conig=xxx` with `xmake cu --conig=xxx`.
 --- There are also example configs inside `xmake/` folder. You can import configs by running `xmake config --import=xxx.txt`.
 
