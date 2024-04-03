@@ -15,18 +15,20 @@ After installing MSYS2, launch `mingw32.exe` within the MSYS2 installation direc
 ```sh
 # Perform a full system upgrade first:
 pacman -Syu
-# Install LLVM/clang toolchain:
-pacman -S mingw-w64-clang-i686-toolchain
 # Install MinGW GCC toolchain:
 pacman -S mingw-w64-i686-toolchain
+# Install LLVM/clang toolchain:
+pacman -S mingw-w64-clang-i686-toolchain
+# Install extra clang tools:
+pacman -S mingw-w64-i686-clang-tools-extra
+# Install lua library:
+pacman -S mingw-w64-i686-lua
 # Install Boost library:
 pacman -S mingw-w64-i686-boost
 # Install SWIG:
 pacman -S mingw-w64-i686-swig
 # Install git:
 pacman -S git
-# Install lua library (optional)
-pacman -S mingw-w64-i686-lua
 ```
 
 **Note:** If the download process seems sluggish, consider modifying the mirror lists under `/etc/pacman.d/` to prioritize faster mirrors.
