@@ -25,6 +25,8 @@ pacman -S mingw-w64-i686-boost
 pacman -S mingw-w64-i686-swig
 # Install git:
 pacman -S git
+# Install lua library (optional)
+pacman -S mingw-w64-i686-lua
 ```
 
 **Note:** If the download process seems sluggish, consider modifying the mirror lists under `/etc/pacman.d/` to prioritize faster mirrors.
