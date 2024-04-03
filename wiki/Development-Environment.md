@@ -33,7 +33,7 @@ pacman -S git
 
 **Note:** If the download process seems sluggish, consider modifying the mirror lists under `/etc/pacman.d/` to prioritize faster mirrors.
 
-#### Xmake Installation
+#### Xmake Installation (Optional)
 
 Download `xmake-master.win64.zip` from [xmake's GitHub releases page](https://github.com/xmake-io/xmake/releases) and unpack it in a directory of your choice, such as `C:\Global`.
 
@@ -56,7 +56,7 @@ To configure the `Path` system variable:
 
    ![Env](img/dev-env/Env.png)
 
-   - `C:\Global\xmake`
+   - `C:\Global\xmake` (optional)
    - `C:\msys64\mingw32\bin`
    - `C:\msys64\mingw64\bin`
    - `C:\msys64\usr\bin`
@@ -84,6 +84,8 @@ brew install llvm
 brew install swig
 # Install git:
 brew install git
+# Install xmake (optional)
+brew install xmake
 ```
 
 **Note:** Ensure that the system utilizes Homebrew's clang instead of Apple's clang. Search for "macOS switch Homebrew clang" for solutions.
@@ -98,7 +100,7 @@ Install the LLVM/Clang toolchain, SWIG, Git, and xmake using the package manager
 
 MinGW toolchain installation on macOS or Linux may not be compatible with our project. However, a compatible sysroot is essential. Download it from [here](https://github.com/kokoro11/FTL-Hyperspace/releases/tag/gcc). Unpack it in a suitable directory, e.g., `/opt/`.
 
-## Test Xmake
+## Test Xmake (Optional)
 
 On Windows launch PowerShell. On other platforms launch terminal.
 
@@ -169,5 +171,48 @@ xmake cu --<name>=<value>
 ## Set Up VS Code
 
 Install Visual Studio Code, then disable the default "C/C++" extension and install the "clangd" extension for improved C++ language support.
+
+If you skipped xmake installation, add these lines to `.vscode/settings.json` to enable C++ intellisense.
+
+- On Windows, delete the line with `<sysroot path>` or set it to `C:/msys64/mingw32`.
+- On other platforms, replace `<sysroot path>` with the downloaded sysroot.
+
+```json
+    "clangd.fallbackFlags": [
+        "-c",
+        "-Qunused-arguments",
+        "--target=i686-w64-windows-gnu",
+        "--sysroot=<sysroot path>",
+        "-fdwarf-exceptions",
+        "-pthread",
+        "-m32",
+        "-Wall",
+        "-Wextra",
+        "-O0",
+        "-std=c++11",
+        "-Irapidxml",
+        "-Ilua",
+        "-I.",
+        "-D_REENTRANT",
+        "-DSKIPDISCORD",
+        "-DBUILD_DLL",
+        "-D__GXX_TYPEINFO_EQUALITY_INLINE=0",
+        "-msse",
+        "-msse2",
+        "-mfpmath=sse",
+        "-Werror=narrowing",
+        "-DDEBUG"
+    ]
+```
+
+**Note:** If `.vscode/settings.json` does not exist, create one and wrap the lines in curly braces:
+
+```json
+{
+    "clangd.fallbackFlags": [
+        ...
+    ]
+}
+```
 
 With these steps completed, you should now benefit from language intellisense while editing source files, along with enhanced build speed for the project.
