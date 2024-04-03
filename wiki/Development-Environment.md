@@ -6,7 +6,7 @@
 
 #### MSYS2 Installation
 
-MSYS2 provides a seamless development environment for Windows. Follow the installation steps outlined on [MSYS2's official website](https://www.msys2.org/). It's recommended to retain the default installation directory (`C:/msys64`).
+MSYS2 provides a seamless development environment for Windows. Follow the installation steps outlined on [MSYS2's official website](https://www.msys2.org/). It's recommended to retain the default installation directory (`C:\msys64`).
 
 #### LLVM/Clang Toolchain and Essential Tools Installation on MSYS2
 
@@ -31,9 +31,9 @@ pacman -S git
 
 #### Xmake Installation
 
-Download `xmake-master.win64.zip` from [xmake's GitHub releases page](https://github.com/xmake-io/xmake/releases) and unpack it in a directory of your choice, such as `C:/Global`.
+Download `xmake-master.win64.zip` from [xmake's GitHub releases page](https://github.com/xmake-io/xmake/releases) and unpack it in a directory of your choice, such as `C:\Global`.
 
-**Note:** Alternatively, you can install xmake via `winget` which automatically configures the `PATH` variable. Use `winget install --id=Xmake-io.Xmake -e` for installation.
+**Note:** Alternatively, you can install xmake via `winget` which automatically configures the `Path` variable. Run `winget install --id=Xmake-io.Xmake -e` in PowerShell for installation.
 
 #### Configure `Path` System Variable
 
@@ -52,16 +52,16 @@ To configure the `Path` system variable:
 
    ![Env](img/dev-env/Env.png)
 
-   - `C:/Global/xmake`
-   - `C:/msys64/mingw32/bin`
-   - `C:/msys64/mingw64/bin`
-   - `C:/msys64/usr/bin`
+   - `C:\Global\xmake`
+   - `C:\msys64\mingw32\bin`
+   - `C:\msys64\mingw64\bin`
+   - `C:\msys64\usr\bin`
 
    ![EditEnv](img/dev-env/EditEnv.png)
 
-   **Note:** Replace `C:/Global/xmake` with your xmake installation folder and `C:/msys64` with your MSYS2 installation folder.
+   **Note:** Replace `C:\Global\xmake` with your xmake installation folder and `C:\msys64` with your MSYS2 installation folder.
 
-   **Note:** Ensure the order of MSYS2 bin directories is as follows: `mingw32/bin`, `mingw64/bin`, `usr/bin`.
+   **Note:** Ensure the order of MSYS2 bin directories is as follows: `mingw32\bin`, `mingw64\bin`, `usr\bin`.
 
 ### On macOS
 
@@ -96,7 +96,9 @@ MinGW toolchain installation on macOS or Linux may not be compatible with our pr
 
 ## Test Xmake
 
-Clone this project:
+On Windows launch PowerShell. On other platforms launch terminal.
+
+Clone this repository:
 
 ```sh
 git clone https://github.com/kokoro11/FTL-Hyperspace
