@@ -24,7 +24,7 @@
 #endif
 
 
-#include <stdint.h>
+#include <cstdint>
 #include <array>
 #include <windows.h>
 #include "zhl.h"

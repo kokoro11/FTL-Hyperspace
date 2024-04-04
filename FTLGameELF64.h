@@ -24,7 +24,7 @@
 #endif
 
 
-#include <stdint.h>
+#include <cstdint>
 #include <array>
 #include "zhl.h"
 #include "rapidxml.hpp"
