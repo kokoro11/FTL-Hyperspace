@@ -20447,6 +20447,20 @@ void freetype::font_data::init(const void *buffer, int bufferSize, unsigned int 
 namespace _func1473
 {
 	static void *func = 0;
+	static short argdata[] = {0x101, 0x1ff, 0x1ff, 0x1ff, 0x1ff};
+	static FunctionDefinition funcObj("freetype::font_data::init_bitmap", typeid(void (freetype::font_data::*)(const void *, int , int , int )), "5589e55389cb83e4f083ec208b????c744????00000000", argdata, 5, 5, &func);
+}
+
+void freetype::font_data::init_bitmap(const void *buffer, int bufferSize, int size, int h)
+{
+	typedef void __attribute__((thiscall)) (*custom_arg_funcptr_t)(freetype::font_data *this_arg, const void *buffer_arg, int bufferSize_arg, int size_arg, int h_arg);
+	custom_arg_funcptr_t execfunc = (custom_arg_funcptr_t) _func1473::func;
+	return execfunc(this, buffer, bufferSize, size, h);
+}
+
+namespace _func1474
+{
+	static void *func = 0;
 	static short argdata[] = {0x101};
 	static FunctionDefinition funcObj("freetype::font_data::clean", typeid(void (freetype::font_data::*)()), "5589e583e4f083ec108b4104890424e8????????c9c3", argdata, 1, 5, &func);
 }
@@ -20454,11 +20468,11 @@ namespace _func1473
 void freetype::font_data::clean()
 {
 	typedef void __attribute__((thiscall)) (*custom_arg_funcptr_t)(freetype::font_data *this_arg);
-	custom_arg_funcptr_t execfunc = (custom_arg_funcptr_t) _func1473::func;
+	custom_arg_funcptr_t execfunc = (custom_arg_funcptr_t) _func1474::func;
 	return execfunc(this);
 }
 
-namespace _func1474
+namespace _func1475
 {
 	static void *func = 0;
 	static short argdata[] = {0x1ff, 0x1ff};
@@ -20468,11 +20482,11 @@ namespace _func1474
 float __stdcall font_baseline(int font_id, float size)
 {
 	typedef float __attribute__((cdecl)) (*custom_arg_funcptr_t)(int font_id_arg, float size_arg);
-	custom_arg_funcptr_t execfunc = (custom_arg_funcptr_t) _func1474::func;
+	custom_arg_funcptr_t execfunc = (custom_arg_funcptr_t) _func1475::func;
 	return execfunc(font_id, size);
 }
 
-namespace _func1475
+namespace _func1476
 {
 	static void *func = 0;
 	static short argdata[] = {0x1ff, 0x1ff};
@@ -20482,13 +20496,13 @@ namespace _func1475
 float __stdcall font_height(int font_id, float size)
 {
 	typedef float __attribute__((cdecl)) (*custom_arg_funcptr_t)(int font_id_arg, float size_arg);
-	custom_arg_funcptr_t execfunc = (custom_arg_funcptr_t) _func1475::func;
+	custom_arg_funcptr_t execfunc = (custom_arg_funcptr_t) _func1476::func;
 	return execfunc(font_id, size);
 }
 
 float *Global_freetype_sil_freetype_outline;
 
-namespace _var1476
+namespace _var1477
 {
 	static VariableDefinition varObj("Global_freetype_sil_freetype_outline", "!89108b559cc705(???????\?)000000408950048b55a0", &Global_freetype_sil_freetype_outline);
 }
