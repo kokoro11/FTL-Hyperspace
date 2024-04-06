@@ -3014,6 +3014,10 @@ struct SpaceManager;
 
 struct LIBZHL_INTERFACE CompleteShip
 {
+	CompleteShip(SpaceManager *space,bool bPlayerShip,int iShipId)
+	{
+		this->constructor(space, bPlayerShip, iShipId);
+	}
 	void CheckTeleportMovement();
 
 	virtual ~CompleteShip() {}
@@ -3042,7 +3046,8 @@ struct LIBZHL_INTERFACE CompleteShip
 	LIBZHL_API void SetEnemyShip(CompleteShip *other);
 	LIBZHL_API void SetShip(ShipManager *ship);
 	LIBZHL_API std::vector<CrewMember*> TeleportCrew(int roomId, bool intruders);
-	LIBZHL_API void constructor(SpaceManager *space, bool unk, int unk2);
+	LIBZHL_API void constructor(SpaceManager *space, bool bPlayerShip, int iShipId);
+	LIBZHL_API void destructor(int unk);
 	
 	int iShipId;
 	ShipManager *shipManager;
@@ -4506,12 +4511,14 @@ struct CommandGui
 	LIBZHL_API void KeyDown(SDLKey key, bool shiftHeld);
 	LIBZHL_API void LButtonDown(int mX, int mY, bool shiftHeld);
 	LIBZHL_API void LButtonUp(int mX, int mY, bool shiftHeld);
+	LIBZHL_API void LinkShip(CompleteShip *ship);
 	LIBZHL_API void MouseMove(int mX, int mY);
 	LIBZHL_API void NewLocation(const std::string &mainText, std::vector<ChoiceText> *choices, ResourceEvent &resources, bool testingEvents);
 	LIBZHL_API void OnInit();
 	LIBZHL_API void OnLoop();
 	LIBZHL_API void RenderPlayerShip(Point &shipCenter, float jumpScale);
 	LIBZHL_API void RenderStatic();
+	LIBZHL_API void Restart();
 	LIBZHL_API void RunCommand(std::string &command);
 	LIBZHL_API void Victory();
 	LIBZHL_API void constructor();
@@ -6546,6 +6553,7 @@ struct ScoreKeeper
 	LIBZHL_API void SaveGame(int fd);
 	LIBZHL_API void SaveScores(int file, std::vector<TopScore> &topScores);
 	LIBZHL_API void SetSector(int sector);
+	LIBZHL_API void SetShipBlueprint(std::string *blueprint);
 	LIBZHL_API void SetVictory(bool victory);
 	LIBZHL_API void SetupTopShip(int variant);
 	LIBZHL_API void UnlockShip(int shipType, int shipVariant, bool save, bool hidePopup);
@@ -6758,6 +6766,7 @@ struct Ship : ShipObject
 	
 	LIBZHL_API void BreachRandomHull(int roomId);
 	LIBZHL_API void BreachSpecificHull(int grid_x, int grid_y);
+	LIBZHL_API void ClearImages();
 	LIBZHL_API int EmptySlots(int roomId);
 	LIBZHL_API bool FullRoom(int roomId, bool intruder);
 	LIBZHL_API int GetAvailableRoom(int preferred, bool intruder);
