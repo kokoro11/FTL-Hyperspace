@@ -20,6 +20,8 @@ All calls are under `Hyperspace`
    - Returns the instance of `ShipManager` associated with the given ID (can be 0 or 1). If a ship does not exist for the given ID, returns `nil`.
 - `CApp :GetCApp()`
    - Returns the main instance of [`CApp`](#CApp). Always use this to access any members and methods belonging to the [`CApp`](#CApp) class.
+- `ShipInfo :GetShipInfo(bool enemy)`
+   - Returns [`ShipInfo`](#ShipInfo) for the player ship if `enemy` is `false`, or for the enemy ship if `enemy` is `true`.
 - `BlueprintManager :GetBlueprints()`
    - Returns the main instance of `BlueprintManager`. Always use this to access any members and methods belonging to the `BlueprintManager` class.
 - `SoundControl :GetSoundControl()`
@@ -53,6 +55,12 @@ All calls are under `Hyperspace`
 - [`WorldManager`](#WorldManager) `.world`
 - `MainMenu` `.menu`
    - **Read-only**
+
+## ShipInfo
+
+### Fields
+
+- `std::map<std::string, int>` `.augList`
 
 ## WorldManager
 
@@ -177,8 +185,8 @@ As ShipManager extends ShipObject, the methods of ShipObject can be called from 
    - Gets the room center point of a specific room id.
 - `std::pair<int, int> :GetAvailablePower()`
    - First element of the pair is the maximum reactor power, the second element is the available reactor power.
-- ~~`:AddCrewMemberFromBlueprint`~~
-- ~~`:AddCrewMemberFromString`~~
+- `CrewMember* :AddCrewMemberFromBlueprint(CrewBlueprint *bp, int slot, bool init, int roomId, bool intruder)`
+- `CrewMember* :AddCrewMemberFromString(const std::string &name, const std::string &race, bool intruder, int roomId, bool init, bool male)`
 - ~~`:AddDrone`~~
 - ~~`:AddEquipmentFromList`~~
 - ~~`:AddInitialCrew`~~
@@ -429,6 +437,16 @@ Hyperspace.ships.player:DamageBeam(Hyperspace.ships.player:GetRandomRoomCenter()
 - `bool` `.hostile`
 - `bool` `.targeted`
 
+## Slot
+
+### Fields
+- `int` `.roomId`
+   - **Read-only**
+- `int ` `.slotId`
+   - **Read-only**
+- `Point` `.worldLocation`
+   - Field is **read-only** but fields under this object may still be mutable.
+
 ## Ship
 Extends ShipObject
 
@@ -443,6 +461,7 @@ Extends ShipObject
 -  `int :GetAvailableRoomSlot(int roomId, bool intruder)`
 -  `Globals::Ellipse GetBaseEllipse()`
    -  Return `baseEllipse` member by value.
+- `std::vector<Repairable*> :GetHullBreaches(bool onlyDamaged)`
 - `int GetSelectedRoomId(int x, int y, bool bIncludeWalls)`
    -  Returns the id of the room at the selected point, or -1 if no valid room would be selected at that point. bIncludeWalls specifies that walls count as part of the room.
 -  `void LockdownRoom(int roomId, Pointf pos)` 
@@ -1128,6 +1147,7 @@ local _, canMove = crew.extend:CalculateStat(Hyperspace.CrewStat.CAN_MOVE)
 - `std::vector<std::string>` `.transformName`
 - `bool` `.changeIfSame`
 - `SkillsDefinition` `.skillsDef`
+
 ## GenericButton
 
 ### Methods
