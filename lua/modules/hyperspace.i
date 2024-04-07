@@ -88,6 +88,13 @@ namespace std {
 
     // extend the map as well
     %extend map {
+        std::vector<K> keys() {
+            std::vector<K> keys;
+            keys.reserve(self->size());
+            for (std::map< K, T, C >::iterator i = self->begin(); i != self->end(); ++i)
+                keys.push_back(i->first);
+            return keys;
+        }
         const T& __getitem__(const K& key) throw (std::out_of_range) {
             std::map< K, T, C >::iterator i = self->find(key);
             if (i != self->end())
@@ -112,6 +119,7 @@ namespace std {
     %template(vector_SpaceDrone) vector<SpaceDrone*>;
     %template(vector_Room) vector<Room*>;
 	%template(vector_Door) vector<Door*>;
+	%template(vector_Repairable) vector<Repairable*>;
 	%template(vector_OuterHull) vector<OuterHull*>;
 	%template(vector_WeaponMount) vector<WeaponMount>;
 	%template(vector_DamageMessage) vector<DamageMessage*>;
@@ -122,6 +130,7 @@ namespace std {
     %template(pair_float_float) pair<float, float>;
     %template(vector_Pointf) vector<Pointf>;
     %template(vector_Point) vector<Point>;
+    %template(map_string_int) map<string,int>;
     %template(map_int_SystemTemplate) map<int,ShipBlueprint::SystemTemplate>;
     %template(unordered_map_string_int) unordered_map<string,int>;
     %template(vector_ActivatedPower) vector<ActivatedPower*>;
@@ -250,6 +259,7 @@ public:
     static Global* GetInstance();
     ShipManager* GetShipManager(int iShipId);
     CApp* GetCApp();
+    ShipInfo* GetShipInfo(bool enemy);
     BlueprintManager* GetBlueprints();
     SoundControl* GetSoundControl();
     AnimationControl *GetAnimationControl();
@@ -926,6 +936,11 @@ playerVariableType playerVariables;
 %rename("%s") CustomShipUnlocks::UnlockShip;
 %rename("%s") CustomShipUnlocks::GetCustomShipUnlocked;
 
+%rename("%s") ShipInfo;
+%nodefaultctor ShipInfo;
+%nodefaultdtor ShipInfo;
+%rename("%s") ShipInfo::augList;
+
 %rename("%s") ShipObject;
 %nodefaultctor ShipObject;
 %nodefaultdtor ShipObject;
@@ -958,8 +973,8 @@ playerVariableType playerVariables;
 %rename("%s") ShipManager::GetRandomRoomCenter;
 %rename("%s") ShipManager::GetRoomCenter;
 %rename("%s") ShipManager::GetAvailablePower;
-//%rename("%s") ShipManager::AddCrewMemberFromBlueprint; // Might prefer via event. Might need to specify that this creates a new object for cleanup?
-//%rename("%s") ShipManager::AddCrewMemberFromString; // Might prefer via event. Might need to specify that this creates a new object for cleanup?
+%rename("%s") ShipManager::AddCrewMemberFromBlueprint; // Might prefer via event. Might need to specify that this creates a new object for cleanup?
+%rename("%s") ShipManager::AddCrewMemberFromString; // Might prefer via event. Might need to specify that this creates a new object for cleanup?
 %rename("%s") ShipManager::AddDrone;
 //%rename("%s") ShipManager::AddEquipmentFromList; // Might prefer via event?
 %rename("%s") ShipManager::AddInitialCrew;
@@ -1721,6 +1736,7 @@ playerVariableType playerVariables;
 %rename("%s") Ship::FullRoom;
 %rename("%s") Ship::GetAvailableRoomSlot;
 %rename("%s") Ship::GetBaseEllipse;
+%rename("%s") Ship::GetHullBreaches;
 %rename("%s") Ship::GetSelectedRoomId;
 %rename("%s") Ship::LockdownRoom;
 %rename("%s") Ship::RoomLocked;
@@ -1849,6 +1865,17 @@ playerVariableType playerVariables;
 %immutable Door::y;
 %rename("%s") Door::bVertical;
 %immutable Door::bVertical;
+
+%nodefaultctor Slot;
+%nodefaultdtor Slot;
+%rename("%s") Slot;
+
+%immutable Slot::roomId;
+%rename("%s") Slot::roomId;
+%immutable Slot::slotId;
+%rename("%s") Slot::slotId;
+%immutable Slot::worldLocation;
+%rename("%s") Slot::worldLocation;
 
 %nodefaultctor BlueprintManager;
 %nodefaultdtor BlueprintManager;
