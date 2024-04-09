@@ -3165,6 +3165,7 @@ struct ResourceEvent
 
 struct ChoiceText
 {
+	inline ChoiceText() : type(0), text(""), rewards() {};
 	ChoiceText(int _type, const std::string& _text, ResourceEvent _rewards) : 
 	type(_type), text(_text), rewards(_rewards)
 	{

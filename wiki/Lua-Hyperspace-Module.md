@@ -1209,6 +1209,121 @@ local _, canMove = crew.extend:CalculateStat(Hyperspace.CrewStat.CAN_MOVE)
 - `std::vector<std::string>` `.missSounds`
 - `string` `.image`
 
+## CombatControl
+
+### Fields
+- [`WeaponControl`](#WeaponControl) `weapControl`
+- `Point` `.position`
+- `Point` `.targetPosition`
+- `bool` `.boss_visual`
+   - **Read-only**
+
+## WeaponControl
+**Extends ~~`ArmamentControl`~~**
+### Fields
+- `bool` `.autoFiring`
+   - **Read-only**
+
+## LocationEvent
+
+### Fields
+- [`TextString`](#TextString) `.text`
+- `int` `.environment`
+- `int` `.environmentTarget`
+- `bool` `.store`
+- `bool` `.gap_ex_cleared`
+- `int` `.fleetPosition`
+- `bool` `.beacon`
+- `bool` `.reveal_map`
+- `bool` `.distressBeacon`
+- `bool` `.repair`
+- `int` `.modifyPursuit`
+- `std::string` `.quest`
+- `std::string` `.spaceImage`
+- `std::string` `.planetImage`
+- `std::string` `.eventName`
+- [`BoardingEvent`](#BoardingEvent) `.boarders`
+- `int` `.unlockShip`
+- [`TextString`](#TextString) `.unlockShipText`
+- `bool` `.secretSector`
+- [`std::vector<Choice>`](#Choice) `.choices`
+
+## Choice
+
+**Internal Struct Of [`LocationEvent`](#LocationEvent)**
+
+### Fields
+- [`LocationEvent`](#LocationEvent) `.event`
+- [`TextString`](#TextString) `.text`
+- `bool` `.hiddenReward`
+
+## FocusWindow
+
+### Fields
+- `bool` `.bOpen`
+- `bool` `.bFullFocus`
+- `bool` `.bCloseButtonSelected`
+
+## ChoiceBox
+
+**Extends [`FocusWindow`](#FocusWindow)**
+
+### Fields
+- `std::string` `.mainText`
+- [`std::vector<ChoiceText>`](#ChoiceText) `.choices`
+- `int` `.columnSize`
+- [`std::vector<Globals::Rect>`](#Globals) `.choiceBoxes`
+- `int` `.potentialChoice`
+- `int` `.selectedChoice`
+- `int` `.fontSize`
+- `bool` `.centered`
+- `int` `.gap_size`
+- `float` `.openTime`
+- [`GL_Color`](#GL_Color) `.currentTextColor`
+- `Pointf` `.lastChoice`
+
+## ChoiceText
+
+### Fields
+- `int` `.type`
+- `std::string` `.text`
+
+## CommandGui
+
+### Fields
+- [`ShipStatus`](#ShipStatus) `.shipStatus`
+- [`CrewControl`](#CrewControl) `.crewControl`
+- [`SystemControl`](#SystemControl) `.sysControl`
+- [`CombatControl`](#CombatControl) `.combatControl`
+- [`FTLButton`](#FTLButton) `.ftlButton`
+- [`SpaceStatus`](#SpaceStatus) `.spaceStatus`
+- [`Point`](#Point) `.pauseTextLoc`
+- [`Point`](#Point) `.shipPosition`
+- `bool` `.outOfFuel`
+   - **Read-Only**
+- `bool` `.bPaused`
+   - **Read-Only**
+- `bool` `.bAutoPaused`
+   - **Read-Only**
+- `bool` `.menu_pause`
+   - **Read-Only**
+- `bool` `.event_pause`
+   - **Read-Only**
+- `Button` `.upgradeButton`
+   - **Read-Only**
+- `bool` `.dangerLocation`
+   - **Read-Only**`
+- `bool` `.bHideUI`
+- [`ChoiceBox`](#ChoiceBox) `.choiceBox`
+- `bool` `.jumpComplete`
+   - **Read-Only**
+- `int` `.mapId`
+   - **Read-Only**
+- `bool` `.secretSector`
+   - **Read-Only**
+- `bool` `.choiceBoxOpen`
+   - **Read-Only**
+
 ## ScoreKeeper
 
 ### Fields
@@ -1230,7 +1345,9 @@ local _, canMove = crew.extend:CalculateStat(Hyperspace.CrewStat.CAN_MOVE)
 
 ### Fields
 
-- `Location` `.currentLoc`
+- `std::vector<Location>` `.locations`
+   - **Read-only**
+- [`Location`](#Location) `.currentLoc`
 - [`Sector`](#Sector) `.currentSector`
 - `int` `.pursuitDelay`
 - `GL_Primitive` `.ship`
@@ -1239,6 +1356,17 @@ local _, canMove = crew.extend:CalculateStat(Hyperspace.CrewStat.CAN_MOVE)
    - The no fuel variant of the `ship` icon.
 - `int` `.worldLevel`
    - **Read-only**
+
+## Location
+
+### Fields
+
+- `ImageDesc` `.space`
+- `ImageDesc` `.planet`
+- `std::string` `.spaceImage`
+- `std::string` `.planetImage`
+- `bool` `.known`
+- [`LocationEvent`](#LocationEvent) `.event`
 
 ## Sector
 
@@ -1262,3 +1390,11 @@ local _, canMove = crew.extend:CalculateStat(Hyperspace.CrewStat.CAN_MOVE)
 
 - `std::string` `.data`
 - `bool` `.isLiteral`
+
+## Description
+
+### Fields
+
+- [`TextString`](#TextString) `.title`
+- [`TextString`](#TextString) `.shortTitle`
+
