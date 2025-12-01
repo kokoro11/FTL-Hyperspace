@@ -77,6 +77,10 @@ public:
 
     static bool IsSeededRun() { return isCustomSeed && GetInstance()->GetWorld()->bStartedGame; }
 
+    static inline uintptr_t GetImageBase() {
+        return imageBaseAddr;
+    }
+
 private:
     bool __resourcesInitialized;
     static Global* instance;
@@ -85,6 +89,8 @@ private:
     uint32_t __baseAddress = 0;
 
     static CApp *__cApp;
+
+    static uintptr_t imageBaseAddr;
 
     // NOTE: Version has been moved to `HSVersion.h`
 };

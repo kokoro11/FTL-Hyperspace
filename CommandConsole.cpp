@@ -7,7 +7,6 @@
 #include "CustomSystems.h"
 #include "CustomAchievements.h"
 #include "CustomShips.h"
-#include "CustomSystems.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <cmath>
@@ -384,6 +383,25 @@ bool CommandConsole::RunCommand(CommandGui *commandGui, const std::string& cmd)
         }
 
         return true;
+    }
+    if (cmdName == "SYSADD" && command.length() >= 8) {
+        try {
+            std::vector<std::string> cmdList{};
+            boost::split(cmdList, cmd, boost::is_any_of(" "), boost::token_compress_on);
+            if (cmdList.size() < 3)
+                return false;
+            auto sysID = boost::lexical_cast<int>(cmdList.at(1));
+            auto roomID = boost::lexical_cast<int>(cmdList.at(2));
+            ShipManager& ship = *commandGui->shipComplete->shipManager;
+            CustomAddSystem(ship, sysID, roomID);
+            return true;
+        } catch (std::exception& e) {
+            hs_log_file("Exception in RunCommand SYSADD: %s\n", e.what());
+            return false;
+        } catch (...) {
+            hs_log_file("Unknown exception in RunCommand SYSADD\n");
+            return false;
+        }
     }
 
     return false;

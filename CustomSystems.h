@@ -1,5 +1,6 @@
 #pragma once
 #include "Global.h"
+#include <boost/optional.hpp>
 
 void ParseSystemsNode(rapidxml::xml_node<char>* node);
 class CustomMindSystem
@@ -88,3 +89,5 @@ private:
 };
 
 extern float leakModifiers[2]; // [0] = player, [1] = enemy
+
+int CustomAddSystem(ShipManager& self, int systemId, boost::optional<int> customOpts = boost::none);

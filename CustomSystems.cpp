@@ -6,6 +6,8 @@
 #include "CustomShips.h"
 #include "SystemBox_Extend.h"
 #include <boost/lexical_cast.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
 #include <cmath>
 
@@ -2484,4 +2486,627 @@ HOOK_METHOD_PRIORITY(ShipManager, UpdateEnvironment, 9999, () -> void)
         G_->GetAchievementTracker()->SetAchievement("ACH_BURNING", false, true);
     }
 
+}
+
+template <typename T, uintptr_t addr>
+inline T& GlobalVar() noexcept {
+    return *reinterpret_cast<T*>(Global::GetImageBase() + addr);
+}
+
+inline void ShipSetPrimarySlot(Ship& self, int roomId, int slot) {
+    if (slot >= 0 && slot < ShipGraph::GetShipInfo(self.iShipId)->GetNumSlots(roomId)) {
+        self.vRoomList.at(roomId)->primarySlot = slot;
+    }
+};
+
+inline void ShipSetPrimaryDirection(Ship& self, int roomId, int direction) {
+    self.vRoomList.at(roomId)->primaryDirection = direction;
+};
+
+void ShipChoosePrimarySlot(Ship& self, int roomId) {
+    // Retrieve the ShipGraph instance associated with this ship
+    ShipGraph& shipGraph = *ShipGraph::GetShipInfo(self.iShipId);
+
+    // Get the rectangular definition of the room
+    Globals::Rect roomRect = shipGraph.GetRoomShape(roomId);
+
+    // Translate the absolute pixel coordinates of the room to grid coordinates
+    Point gridStart = ShipGraph::TranslateToGrid(roomRect.x, roomRect.y);
+
+    // Calculate the width and height of the room in tiles (35 pixels per tile)
+    int widthInTiles = roomRect.w / 35;
+    int heightInTiles = roomRect.h / 35;
+
+    // Vector to store potential slots for the primary component (e.g., console).
+    // Stores a pair: <SlotIndex, Direction>
+    std::vector<std::pair<int, int>> candidates;
+
+    int gridX = gridStart.x;
+    int gridY = gridStart.y;
+    int endX = gridX + widthInTiles;
+    int endY = gridY + heightInTiles;
+
+    // Iterate through every tile in the room
+    for (int x = gridX; x < endX; ++x) {
+        for (int y = gridY; y < endY; ++y) {
+            // Calculate the 0-based index of the slot within the room
+            int slotIndex = (x - gridX) + (y - gridY) * widthInTiles;
+
+            // Check adjacent squares for walls.
+            // ConnectedGridSquares returns 0 if there is no connection (i.e., a wall exists).
+            // Directions: 0=Up, 1=Right, 2=Down, 3=Left (Standard FTL convention)
+
+            // Check Down (y + 1)
+            if (shipGraph.ConnectedGridSquares(x, y, x, y + 1) == 0) {
+                candidates.emplace_back(slotIndex, 2);
+            }
+
+            // Check Up (y - 1)
+            if (shipGraph.ConnectedGridSquares(x, y, x, y - 1) == 0) {
+                candidates.emplace_back(slotIndex, 0);
+            }
+
+            // Check Right (x + 1)
+            if (shipGraph.ConnectedGridSquares(x, y, x + 1, y) == 0) {
+                candidates.emplace_back(slotIndex, 1);
+            }
+
+            // Check Left (x - 1)
+            if (shipGraph.ConnectedGridSquares(x, y, x - 1, y) == 0) {
+                candidates.emplace_back(slotIndex, 3);
+            }
+        }
+    }
+
+    // If valid wall slots were found, pick one randomly
+    if (!candidates.empty()) {
+        const unsigned int rngVal = random32();
+        /* if (!Globals::RNG.useSysRand)
+            rngVal = random32();
+        else
+            rngVal = _rand();*/
+
+        // Select a random candidate
+        const std::pair<int, int> selection = candidates[rngVal % candidates.size()];
+
+        // Apply the selection to the room
+        // Room* pRoom = self.vRoomList[roomId];
+        // pRoom->SetPrimarySlot(selection.first);
+        ShipSetPrimarySlot(self, roomId, selection.first);
+        // pRoom->SetPrimaryDirection(selection.second);
+        ShipSetPrimaryDirection(self, roomId, selection.second);
+    } else {
+        ftl_log("Somehow a room has ZERO walls. We really shouldn't allow that.\n");
+    }
+}
+
+void ShipObjectAddEquipment(ShipObject& self, const std::string& blueName) {
+    int index = (self.iShipId == 0) ? 1 : 0;
+    // for win x86
+    // ShipObject::shipInfoList
+    auto& shipInfoList = GlobalVar<std::vector<ShipInfo>, 0x004c6f80>();
+    std::map<std::string, int>& equipMap = shipInfoList.at(index).equipList;
+    auto it = equipMap.find(blueName);
+    if (it == equipMap.end()) {
+        equipMap.emplace(blueName, 1);
+    } else {
+        it->second += 1;
+    }
+}
+
+struct ComputerGlowInfo {
+    std::string name{};
+    int x = 0;
+    int y = 0;
+    int direction = 2;  // 0=DOWN, 1=RIGHT, 2=UP, 3=LEFT
+};
+
+template <typename T>
+inline void ParseRoomLayoutNode(const T& v, std::map<std::string, ComputerGlowInfo>& cache) {
+    if (v.first != "roomLayout") {
+        hs_log_file("Unrecognized node: %s\n", v.first.c_str());
+        return;
+    }
+    const boost::property_tree::ptree& node = v.second;
+    // 1. Get 'name' attribute
+    // Access attributes via <xmlattr>
+    boost::optional<std::string> nameOpt = node.get_optional<std::string>("<xmlattr>.name");
+
+    if (!nameOpt) {
+        hs_log_file("<roomLayout> missing name attribute in rooms.xml\n");
+        return;
+    }
+
+    std::string layoutName = nameOpt.get();
+    std::string cacheKey = "room_" + layoutName;
+
+    // 2. Find <computerGlow> child node
+    auto glowIt = node.find("computerGlow");
+    if (glowIt != node.not_found()) {
+        const boost::property_tree::ptree& glowNode = glowIt->second;
+        ComputerGlowInfo info;
+
+        // 3. Parse Attributes of computerGlow
+        info.name = glowNode.get<std::string>("<xmlattr>.name", "glow");
+        info.x = glowNode.get<int>("<xmlattr>.x", 0);
+        info.y = glowNode.get<int>("<xmlattr>.y", 0);
+
+        std::string dirStr = glowNode.get<std::string>("<xmlattr>.dir", "");
+
+        // Direction mapping based on decompilation
+        if (dirStr == "LEFT") {
+            info.direction = 3;
+        } else if (dirStr == "DOWN") {
+            info.direction = 0;
+        } else if (dirStr == "RIGHT") {
+            info.direction = 1;
+        } else {
+            info.direction = 2;  // Default (UP)
+        }
+
+        cache[cacheKey] = info;
+    } else {
+        hs_log_file("<roomLayout> missing <computerGlow> node in rooms.xml\n");
+    }
+}
+
+//static std::map<std::string, ComputerGlowInfo> ShipSystemGlowInfo{};
+
+const ComputerGlowInfo* ShipSystemGetGlowInfoForImage(const std::string& image) {
+    // Check if the cache is empty. If it is, we need to load and parse the XML.
+    // (The decompilation shows the parsing logic occurring in this function).
+    auto& glowInfo = GlobalVar<std::map<std::string, ComputerGlowInfo>, 0x004cc8a0>();
+    //auto& glowInfo = ShipSystemGlowInfo;
+    if (glowInfo.empty()) {
+        std::stringstream ss;
+        {
+            std::unique_ptr<char[]> fileContent{G_->GetResources()->LoadFile("data/rooms.xml")};
+            if (!fileContent) {
+                return nullptr;
+            }
+            ss << fileContent.get();
+        }
+
+        try {
+            boost::property_tree::ptree pt;
+
+            // Load XML.
+            // We use defaults flags. If the XML is malformed (e.g. multiple roots
+            // without <FTL> wrapper), this might throw. However, we do not
+            // forcefully add the wrapper.
+            boost::property_tree::read_xml(ss, pt);
+            // Iterate over the top-level nodes of the property tree
+            for (const auto& v : pt) {
+                if (v.first == "FTL") {
+                    for (const auto& child : v.second) {
+                        ParseRoomLayoutNode(child, glowInfo);
+                    }
+                } else {
+                    ParseRoomLayoutNode(v, glowInfo);
+                }
+            }
+        } catch (const boost::property_tree::xml_parser_error& e) {
+            hs_log_file("XML Parsing Error in data/rooms.xml: %s\n", e.what());
+        } catch (const std::exception& e) {
+            hs_log_file("Error processing rooms.xml: %s\n", e.what());
+        }
+    }
+
+    // Lookup
+    auto it = glowInfo.find(image);
+    if (it != glowInfo.end()) {
+        return &it->second;
+    }
+    return nullptr;
+}
+
+void ShipSystemSetFloorImage(ShipSystem& self, const std::string& name) {
+    if (name.empty()) {
+        return;
+    }
+
+    self.interiorImageName = name;
+
+    // Destroy existing primitives
+    if (self.interiorImage) {
+        CSurface::GL_DestroyPrimitive(self.interiorImage);
+    }
+    if (self.interiorImageOn) {
+        CSurface::GL_DestroyPrimitive(self.interiorImageOn);
+    }
+    if (self.interiorImageManned) {
+        CSurface::GL_DestroyPrimitive(self.interiorImageManned);
+    }
+    if (self.interiorImageMannedFancy) {
+        CSurface::GL_DestroyPrimitive(self.interiorImageMannedFancy);
+    }
+
+    // 1. Create the Base Interior Image
+    const std::string baseImagePath = "ship/interior/" + name + ".png";
+    const GL_Color colorWhite = {1.0f, 1.0f, 1.0f, 1.0f};
+
+    // Note: GlobalResources is implied to be the instance 'this' for ResourceControl calls
+    self.interiorImage = G_->GetResources()->CreateImagePrimitiveString(
+        baseImagePath,
+        self.roomShape.x,
+        self.roomShape.y,
+        0,  // Rotation
+        colorWhite,
+        0.75f,  // Alpha
+        false   // Mirror
+    );
+    self.interiorImageOn = nullptr;
+    self.interiorImageManned = nullptr;
+    self.interiorImageMannedFancy = nullptr;
+    if (!self.bBoostable) {
+        return;
+    }
+
+    // 2. Handle Computer/Glow Images
+    const ComputerGlowInfo* glowInfo = ShipSystemGetGlowInfoForImage(name);
+    if (glowInfo == nullptr) {
+        return;
+    }
+
+    const std::string glowBaseName = "ship/interior/" + glowInfo->name;
+
+    // Load textures for animation states
+    GL_Texture* glowTex1 = G_->GetResources()->GetImageId(glowBaseName + "1.png");
+    GL_Texture* glowTex2 = G_->GetResources()->GetImageId(glowBaseName + "2.png");
+    GL_Texture* glowTex3 = G_->GetResources()->GetImageId(glowBaseName + "3.png");
+
+    int width = 1;
+    int height = 1;
+    if (glowTex1 != nullptr) {
+        width = glowTex1->width_;
+        height = glowTex1->height_;
+    }
+
+    // Calculate Position and Rotation
+    auto posX = static_cast<float>(self.roomShape.x + glowInfo->x);
+    auto posY = static_cast<float>(self.roomShape.y + glowInfo->y);
+    int rotation = 0;
+
+    if (glowInfo->direction == 1) {
+        rotation = 90;
+        float offset = static_cast<float>(width - height) * 0.5f;
+        posX -= offset;
+        posY += offset;
+    } else if (glowInfo->direction == 3) {
+        rotation = 270;
+        float offset = static_cast<float>(width - height) * 0.5f;
+        posX -= offset;
+        posY += offset;
+    } else {
+        // Logic: -(uint)(dir == 0) & 180
+        // If dir is 0, rot is 180. If dir is 2, rot is 0.
+        rotation = (glowInfo->direction == 0) ? 180 : 0;
+    }
+
+    // Create Primitives using the loaded textures
+    self.interiorImageOn = G_->GetResources()->CreateImagePrimitive(
+        glowTex1, static_cast<int>(posX), static_cast<int>(posY), rotation, colorWhite, 0.75f, false);
+    self.interiorImageManned = G_->GetResources()->CreateImagePrimitive(
+        glowTex2, static_cast<int>(posX), static_cast<int>(posY), rotation, colorWhite, 0.75f, false);
+    self.interiorImageMannedFancy = G_->GetResources()->CreateImagePrimitive(
+        glowTex3, static_cast<int>(posX), static_cast<int>(posY), rotation, colorWhite, 0.75f, false);
+}
+
+static int OriginalAddSystem(ShipManager& self, int sysId, boost::optional<int> customOpts = boost::none) {
+    if (sysId < 0) {
+        hs_log_file("Invalid system ID %d\n", sysId);
+        return 0;
+    }
+
+    // 1. Lookup system in blueprint
+    auto it = self.myBlueprint.systemInfo.find(sysId);
+    if (it == self.myBlueprint.systemInfo.end()) {
+        hs_log_file("System (ID=%d) not found in ship blueprint\n", sysId);
+        return 0;
+    }
+    const ShipBlueprint::SystemTemplate& sysInfo = it->second;
+
+    // 2. Determine Power
+    int startingPower = ((sysInfo.powerLevel > 0) ? sysInfo.powerLevel : 1) + self.shipLevel;
+    int trueMaxPower = getTrueSystemMaxPower(sysId, sysInfo.maxPower);
+    if (startingPower > trueMaxPower) {
+        startingPower = trueMaxPower;
+    }
+    int retVal = startingPower - sysInfo.powerLevel;
+
+    // 3. Prepare Room Location
+    // Default to the first location specified in blueprint. Artillery overrides this later.
+    int roomId = -1;
+    if (customOpts) {
+        roomId = customOpts.get();
+    } else if (!sysInfo.location.empty()) {
+        roomId = sysInfo.location.at(0);
+    }
+    if (roomId < 0 || static_cast<std::size_t>(roomId) >= self.ship.vRoomList.size()) {
+        hs_log_file("Invalid room ID %d for system ID %d\n", roomId, sysId);
+        return 0;
+    }
+
+    // 3. Add Equipment Entry
+    std::string sysName = ShipSystem::SystemIdToName(sysId);
+    if (sysName.empty()) {
+        hs_log_file("Warning: System (ID=%d) does not have a name\n", sysId);
+    } else {
+        ShipObjectAddEquipment(self, sysName);
+    }
+
+    ShipSystem* newSystem = nullptr;
+    bool replacedSystem = false;  // Tracks if we swapped Medbay/CloneBay
+    int artiFlag = 0;
+
+    // 5. Create System based on ID
+    switch (sysId) {
+        case 0: {  // Shields
+            auto* shieldSystem = self.shieldSystem;
+            if (shieldSystem) {
+                shieldSystem->AddDamage(-10);
+                shieldSystem->IncreasePower(1, false);
+                newSystem = shieldSystem;
+            }
+        } break;
+
+        case 1:  // Engines
+            throw std::runtime_error("Engine system currently not supported.");
+            break;
+
+        case 2: {  // Oxygen
+            int roomCount = static_cast<int>(self.ship.vRoomList.size());
+            self.oxygenSystem = new OxygenSystem(roomCount, roomId, self.iShipId, startingPower);
+            newSystem = self.oxygenSystem;
+        } break;
+
+        case 3:
+            throw std::runtime_error("Weapon system currently not supported.");
+            break;
+
+        case 4:
+            throw std::runtime_error("Drone system currently not supported.");
+            break;
+
+        case 5:
+            throw std::runtime_error("Medbay system currently not supported.");
+            break;
+
+        case 9: {  // Teleporter
+            self.teleportSystem = new TeleportSystem();
+            self.teleportSystem->constructor(9, roomId, self.iShipId, startingPower);
+            newSystem = self.teleportSystem;
+        } break;
+
+        case 10:
+            throw std::runtime_error("Cloaking system currently not supported.");
+            break;
+
+        case 11:
+            throw std::runtime_error("Artillery system currently not supported.");
+            break;
+
+        case 12:
+            throw std::runtime_error("Battery system currently not supported.");
+            break;
+
+        case 13:
+            throw std::runtime_error("CloneBay system currently not supported.");
+            break;
+
+        case 14:
+            throw std::runtime_error("Mind Control system currently not supported.");
+            break;
+
+        case 15:
+            throw std::runtime_error("Hacking system currently not supported.");
+            break;
+
+        default:  // Generic (Pilot, Sensors, Doors, etc.)
+            newSystem = new ShipSystem(sysId, roomId, self.iShipId, startingPower);
+            break;
+    }
+
+    if (!newSystem) {
+        hs_log_file("Failed to create system ID %d\n", sysId);
+        return 0;
+    }
+
+    // 6. Increase to Starting Power
+    while (newSystem->powerState.second < startingPower) {
+        newSystem->UpgradeSystem(1);
+    }
+
+    // 7. Add to vSystemList and set systemKey
+    if (!replacedSystem) {
+        self.vSystemList.emplace_back(newSystem);
+        if (self.systemKey.size() <= static_cast<std::size_t>(sysId)) {
+            self.systemKey.resize(sysId + 1, -1);
+        }
+        self.systemKey.at(sysId) = static_cast<int>(self.vSystemList.size()) - 1;
+    }
+
+    self.addedSystem = true;
+
+    // 8. Crew Slot Management (Medbay/CloneBay on Player Ship)
+    if ((sysId == 5 || sysId == 13) && self.iShipId == 0) {
+        self.ship.EmptySlots(roomId);
+        // Collect crew in the affected room
+        std::vector<CrewMember*> affectedCrew;
+        for (CrewMember* crew : self.vCrewList) {
+            if (crew->currentSlot.roomId == roomId) {
+                crew->EmptySlot();
+                affectedCrew.push_back(crew);
+            }
+        }
+        // Apply slot blocking/layout from blueprint
+        int slotVal = sysInfo.slot == -1 ? 1 : sysInfo.slot;
+        if (slotVal != -2) {
+            self.ship.vRoomList[roomId]->FillSlot(slotVal, false);
+            self.ship.vRoomList[roomId]->FillSlot(slotVal, true);
+        }
+        // Reseat Crew
+        for (CrewMember* crew : affectedCrew) {
+            Slot bestSlot = crew->FindSlot(roomId, -1, true);
+            crew->MoveToRoom(bestSlot.roomId, bestSlot.slotId, true);
+        }
+    }
+
+    // 9. Manning Slot Configuration
+    if (newSystem->bBoostable) {
+        int slot = sysInfo.slot;
+        int dir = sysInfo.direction;
+        if (slot != -1) {
+            ShipSetPrimarySlot(self.ship, roomId, slot);
+            ShipSetPrimaryDirection(self.ship, roomId, dir);
+        } else if (self.iShipId != 0) {
+            // Enemy Ship Defaults
+            if (sysId == 6) {
+                ShipSetPrimarySlot(self.ship, roomId, 0);
+                ShipSetPrimaryDirection(self.ship, roomId, 2);
+            } else if (sysId == 11) {
+                ShipSetPrimarySlot(self.ship, roomId, artiFlag == 3);
+                ShipSetPrimaryDirection(self.ship, roomId, 2);
+            } else {
+                ShipChoosePrimarySlot(self.ship, roomId);
+            }
+        } else {
+            // Player Ship Defaults
+            switch (sysId) {
+                case 0:  // Shields
+                    ShipSetPrimarySlot(self.ship, roomId, 0);
+                    ShipSetPrimaryDirection(self.ship, roomId, 3);
+                    break;
+                case 1:  // Engines
+                    ShipSetPrimarySlot(self.ship, roomId, 2);
+                    ShipSetPrimaryDirection(self.ship, roomId, 0);
+                    break;
+                case 3:  // Weapons
+                    ShipSetPrimarySlot(self.ship, roomId, 1);
+                    ShipSetPrimaryDirection(self.ship, roomId, 2);
+                    break;
+                case 6:  // Pilot
+                    ShipSetPrimarySlot(self.ship, roomId, 0);
+                    ShipSetPrimaryDirection(self.ship, roomId, 1);
+                    break;
+                case 7:   // Sensors
+                case 8:   // Doors
+                default:  // Other custom systems
+                    ShipSetPrimarySlot(self.ship, roomId, 0);
+                    ShipSetPrimaryDirection(self.ship, roomId, 2);
+                    break;
+            }
+        }
+    }
+
+    // 10. Final Setup
+    newSystem->bpCost = sysInfo.bp;
+    ShipSystemSetFloorImage(*newSystem, sysInfo.image);
+    newSystem->maxLevel = trueMaxPower;
+    if (sysId == 0) {
+        self.InstantPowerShields();
+    }
+
+    return retVal;
+}
+
+int CustomAddSystem(ShipManager& self, int systemId, boost::optional<int> customOpts) {
+    if (blockSystemAddition.find(systemId) != blockSystemAddition.end()) {
+        return 0;
+    }
+
+    if (systemId == SYS_OXYGEN && self.DummyOxygenInstalled()) {
+        self.RemoveDummyOxygen();
+    }
+
+    // Set the image defined in systemInfo to the proper value when adding artillery systems
+    auto shipDef = CustomShipSelect::GetInstance()->GetDefinition(self.myBlueprint.blueprintName);
+    if (shipDef.artilleryRoomImages.size() > 1 && systemId == SYS_ARTILLERY) {
+        self.myBlueprint.systemInfo[SYS_ARTILLERY].image = shipDef.artilleryRoomImages[self.artillerySystems.size()];
+    }
+
+    const auto& systemInfos = self.myBlueprint.systemInfo;
+    auto newSystemInfo = systemInfos.find(systemId);
+    if (newSystemInfo == systemInfos.end()) {
+        return 0;
+    }
+
+    int newPowerMax = 1;
+    int replacedSystemId = self.SystemWillReplace(systemId);
+    auto* replacedSystem = replacedSystemId != SYS_INVALID ? self.GetSystem(replacedSystemId) : nullptr;
+    if (replacedSystem) {
+        int removedSystemPower = self.GetSystemPowerMax(replacedSystemId);
+        int newSystemMaxPower = getTrueSystemMaxPower(systemId, newSystemInfo->second.maxPower);
+        if (removedSystemPower > newSystemMaxPower) {
+            // Downgrade the removed system to new system's max power level before removing it
+            removedSystemPower = newSystemMaxPower;
+            replacedSystem->powerState.second = removedSystemPower;
+            replacedSystem->AddDamage(0);
+            replacedSystem->CheckMaxPower();
+            replacedSystem->CheckForRepower();
+        }
+        newPowerMax = removedSystemPower;
+        self.RemoveSystem(replacedSystemId);
+    } else {  // No system replaced, use new system's start power level
+        newPowerMax = getTrueSystemStartPower(systemId, newSystemInfo->second.powerLevel);
+    }
+
+    // Save medical system and remove so original AddSystem doesn't remove it
+    ShipSystem* savedMedical = nullptr;
+    bool restoreClonebay = false;
+    bool restoreMedbay = false;
+
+    if ((systemId == SYS_MEDBAY || systemId == SYS_CLONEBAY)) {
+        if (systemId == SYS_MEDBAY && self.HasSystem(SYS_CLONEBAY)) {
+            savedMedical = self.cloneSystem;
+            self.cloneSystem = nullptr;
+
+            self.vSystemList.erase(self.vSystemList.begin() + self.systemKey[SYS_CLONEBAY]);
+            self.systemKey[SYS_CLONEBAY] = -1;
+
+            restoreClonebay = true;
+        } else if (systemId == SYS_CLONEBAY && self.HasSystem(SYS_MEDBAY)) {
+            savedMedical = self.medbaySystem;
+            self.medbaySystem = nullptr;
+
+            self.vSystemList.erase(self.vSystemList.begin() + self.systemKey[SYS_MEDBAY]);
+            self.systemKey[SYS_MEDBAY] = -1;
+
+            restoreMedbay = true;
+        }
+
+        for (int idx = 0; idx < self.vSystemList.size(); ++idx) {
+            ShipSystem* sys = self.vSystemList[idx];
+            self.systemKey[sys->iSystemType] = idx;
+        }
+    }
+
+    int ret = OriginalAddSystem(self, systemId, customOpts);
+
+    // Add medical system back
+    if (restoreMedbay) {
+        self.medbaySystem = dynamic_cast<MedbaySystem*>(savedMedical);
+        self.vSystemList.push_back(savedMedical);
+        self.systemKey[SYS_MEDBAY] = static_cast<int>(self.vSystemList.size()) - 1;
+    } else if (restoreClonebay) {
+        self.cloneSystem = dynamic_cast<CloneSystem*>(savedMedical);
+        self.vSystemList.push_back(savedMedical);
+        self.systemKey[SYS_CLONEBAY] = static_cast<int>(self.vSystemList.size()) - 1;
+    }
+
+    while (self.GetSystemPowerMax(systemId) < newPowerMax) {
+        self.UpgradeSystem(systemId, 1);
+    }
+
+    // Fixes shield systems being created with damage when >10 bars
+    if (systemId == SYS_SHIELDS && self.shieldSystem) {
+        self.shieldSystem->healthState.first = self.shieldSystem->healthState.second;
+    } else if (systemId == SYS_HACKING && self.hackingSystem) {  // Fixes buying hacking at a store with a ship present
+        if (self.current_target) {
+            self.hackingSystem->drone.SetMovementTarget(&self.current_target->_targetable);
+            G_->GetWorld()->space.drones.push_back(&self.hackingSystem->drone);
+        }
+    }
+
+    return ret;
 }

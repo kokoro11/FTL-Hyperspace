@@ -6,6 +6,8 @@
 #include <SDL2/SDL_messagebox.h>
 #endif // defined
 
+uintptr_t Global::imageBaseAddr = reinterpret_cast<uintptr_t>(GetModuleHandle(nullptr));
+
 Global *Global::instance = new Global();
 
 CApp* Global::__cApp = nullptr;
